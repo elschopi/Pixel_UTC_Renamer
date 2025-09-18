@@ -1,7 +1,7 @@
 # ==============================================================================
 # MIT License
 #
-# Copyright (c) 2025 [Dein Name oder Pseudonym hier eintragen]
+# Copyright (c) 2025 elschopi
 #
 # Permission is hereby granted, free of charge, to a any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -366,4 +366,5 @@ if __name__ == "__main__":
     root = Tk()
     app = RenamerApp(root)
     root.mainloop()
+
 
