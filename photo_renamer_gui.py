@@ -4,9 +4,9 @@ import shutil
 import piexif
 import threading
 from datetime import datetime
-from tkinter import Tk, Label, Button, Frame, filedialog, Toplevel, Listbox, Scrollbar, Checkbutton
-from tkinter import messagebox, StringVar, BooleanVar, font as tkfont
-from tkinter.ttk import Progressbar, Style
+from tkinter import Tk, Toplevel, Listbox, Scrollbar, filedialog, messagebox, StringVar, BooleanVar
+# --- UPDATE: ttk Widgets separat importieren für das Styling ---
+from tkinter.ttk import Progressbar, Style, Frame, Label, Button, Checkbutton
 
 # ==============================================================================
 # Hauptanwendungsklasse
@@ -14,11 +14,11 @@ from tkinter.ttk import Progressbar, Style
 class RenamerApp:
     def __init__(self, master):
         self.master = master
-        master.title("Pixel Photo Renamer v1.0")
+        master.title("Pixel Photo Renamer v1.2") # Version erhöht
         master.geometry("800x600")
         master.minsize(600, 400)
-        master.configure(bg="#2E2E2E")
-
+        # Haupthintergrund wird jetzt über den Frame gesetzt, nicht das Fenster direkt
+        
         # --- Style Konfiguration ---
         self.setup_styles()
 
@@ -34,27 +34,31 @@ class RenamerApp:
     def setup_styles(self):
         """Konfiguriert die Styles für die Tkinter-Widgets."""
         style = Style()
-        style.theme_use('clam')
         
+        try:
+            style.theme_use('clam')
+        except Exception:
+            print("Hinweis: 'clam' Theme nicht gefunden. Verwende Standard-System-Theme.")
+
         # Style für Buttons
         style.configure("TButton",
-                        background="#555555",
-                        foreground="white",
-                        bordercolor="#666666",
-                        lightcolor="#666666",
-                        darkcolor="#2E2E2E",
                         padding=10,
                         font=('Segoe UI', 10))
-        style.map("TButton",
-                  background=[('active', '#666666')],
-                  foreground=[('active', 'white')])
 
         # Style für Labels
         style.configure("TLabel", background="#2E2E2E", foreground="white", font=('Segoe UI', 10))
         style.configure("Header.TLabel", font=('Segoe UI', 12, 'bold'))
         
-        # Style für Frames
+        # Style für Frames und das Hauptfenster
         style.configure("TFrame", background="#2E2E2E")
+        self.master.configure(bg="#2E2E2E")
+        
+        # Style für Checkbutton
+        style.configure("TCheckbutton", background="#2E2E2E", foreground="white", font=('Segoe UI', 10))
+        style.map("TCheckbutton",
+          indicatorcolor=[('selected', '#007ACC'), ('!selected', '#555555')],
+          background=[('active', '#2E2E2E')])
+
 
     def create_widgets(self):
         """Erstellt und platziert alle GUI-Elemente im Hauptfenster."""
@@ -83,7 +87,8 @@ class RenamerApp:
 
         Label(preview_frame, text="3. Vorschau der Umbenennung:", style="Header.TLabel").pack(anchor="w", pady=(0, 5))
         
-        list_frame = Frame(preview_frame)
+        # Listbox und Scrollbar bleiben Standard-tkinter, da sie nicht direkt mit ttk gestylt werden
+        list_frame = Frame(preview_frame, style="TFrame")
         list_frame.pack(fill="both", expand=True)
 
         self.listbox = Listbox(list_frame, bg="#3C3C3C", fg="white", selectbackground="#007ACC", borderwidth=0, highlightthickness=0, font=('Consolas', 10))
@@ -102,9 +107,7 @@ class RenamerApp:
         self.rename_button = Button(action_frame, text="Umbennenung starten", command=self.start_processing, style="TButton", state="disabled")
         self.rename_button.pack(side="left", expand=True, fill="x")
 
-        Checkbutton(main_frame, text="Dateien kopieren statt verschieben (empfohlen)", variable=self.copy_instead_of_move,
-                    bg="#2E2E2E", fg="white", selectcolor="#2E2E2E", activebackground="#2E2E2E", activeforeground="white",
-                    font=('Segoe UI', 10)).pack(anchor="w", pady=10)
+        Checkbutton(main_frame, text="Dateien kopieren statt verschieben (empfohlen)", variable=self.copy_instead_of_move, style="TCheckbutton").pack(anchor="w", pady=10)
 
 
     def select_source_dir(self):
@@ -255,7 +258,8 @@ class RenamerApp:
         popup.transient(self.master)
         popup.grab_set()
 
-        Label(popup, text="Bitte warten...", style="TLabel").pack(pady=10)
+        progress_label = Label(popup, text="Bitte warten...", style="TLabel")
+        progress_label.pack(pady=10)
         progress = Progressbar(popup, orient="horizontal", length=250, mode="determinate")
         progress.pack(pady=5)
         
@@ -267,7 +271,8 @@ class RenamerApp:
             try:
                 task_function(update_progress)
             finally:
-                popup.destroy()
+                # Stellt sicher, dass das Popup im GUI-Thread geschlossen wird
+                self.master.after(0, popup.destroy)
         
         # Starte die Aufgabe in einem neuen Thread, um die GUI nicht zu blockieren
         thread = threading.Thread(target=run_task)
@@ -280,3 +285,4 @@ if __name__ == "__main__":
     root = Tk()
     app = RenamerApp(root)
     root.mainloop()
+
